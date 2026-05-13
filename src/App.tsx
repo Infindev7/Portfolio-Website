@@ -360,6 +360,9 @@ function App() {
             <a href="#contact" className="btn-secondary">
               Get in Touch
             </a>
+            <a href="/Resume.pdf" download className="btn-secondary">
+              Download Resume
+            </a>
           </div>
         </div>
 
@@ -665,6 +668,9 @@ function App() {
               <span className="email-copy-icon">[ copy ]</span>
             </div>
             <div className="social-row">
+              <a href="/Resume.pdf" download className="social-link">
+                Resume
+              </a>
               <a href="https://infindev.itch.io" className="social-link">
                 itch.io
               </a>
