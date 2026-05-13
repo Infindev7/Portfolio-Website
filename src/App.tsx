@@ -674,10 +674,10 @@ function App() {
               <a href="https://infindev.itch.io" className="social-link">
                 itch.io
               </a>
-              <a href="#" className="social-link">
+              <a href="https://github.com/Infindev7" className="social-link">
                 GitHub
               </a>
-              <a href="#" className="social-link">
+              <a href="https://www.linkedin.com/in/soham-pansare-118978293/" className="social-link">
                 LinkedIn
               </a>
             </div>
