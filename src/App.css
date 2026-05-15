@@ -33,7 +33,29 @@ body {
     font-family: var(--font-body);
     font-weight: 300;
     overflow-x: hidden;
-    cursor: none;
+    cursor: none !important;
+}
+
+/* Hide default cursor on interactive areas and the sections that contain them */
+a,
+button,
+.email-box,
+.project-card,
+.skill-cat,
+.social-link,
+.project-link,
+#projects,
+#projects *,
+#contact,
+#contact *,
+a *,
+button *,
+.email-box *,
+.project-card *,
+.skill-cat *,
+.social-link *,
+.project-link * {
+    cursor: none !important;
 }
 
 /* Custom Cursor */
@@ -41,13 +63,14 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     background: var(--accent);
     border-radius: 50%;
     pointer-events: none;
     z-index: 9999;
-    transition: transform 0.1s ease;
+    transform-origin: center;
+    transition: transform 0.18s ease, width 0.18s ease, height 0.18s ease;
     mix-blend-mode: difference;
 }
 
@@ -55,16 +78,42 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 36px;
-    height: 36px;
-    border: 1px solid rgba(184, 255, 61, 0.4);
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(184, 255, 61, 0.45);
     border-radius: 50%;
     pointer-events: none;
     z-index: 9998;
-    transition:
-        transform 0.18s ease,
-        width 0.2s,
-        height 0.2s;
+    transform-origin: center;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+#cursor.hover {
+    width: 8px;
+    height: 8px;
+}
+
+#cursor-ring.hover {
+    border-color: rgba(184, 255, 61, 0.75);
+}
+
+/* Hide custom cursor on mobile */
+@media (max-width: 768px) {
+    #cursor {
+        display: none;
+    }
+
+    #cursor-ring {
+        display: none;
+    }
+    
+    body {
+        cursor: auto;
+    }
+    
+    a, button, .email-box, .project-card, .skill-cat, .social-link, .project-link {
+        cursor: auto;
+    }
 }
 
 /* Scrollbar */

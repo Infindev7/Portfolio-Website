@@ -5,7 +5,7 @@ const EMAIL = "pansaresoham10@gmail.com";
 
 function App() {
   const cursorRef = useRef<HTMLDivElement | null>(null);
-  const ringRef = useRef<HTMLDivElement | null>(null);
+  const cursorRingRef = useRef<HTMLDivElement | null>(null);
   const toastRef = useRef<HTMLDivElement | null>(null);
   const bgCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const plasmaCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -28,73 +28,42 @@ function App() {
 
   useEffect(() => {
     const cur = cursorRef.current;
-    const ring = ringRef.current;
+    const ring = cursorRingRef.current;
     if (!cur || !ring) return;
 
-    let mx = 0;
-    let my = 0;
-    let rx = 0;
-    let ry = 0;
     let hovering = false;
-    let ringRafId = 0;
 
-    const updateCursor = () => {
+    const updateCursor = (x: number, y: number) => {
       const scale = hovering ? 2 : 1;
-      cur.style.transform = `translate(${mx - 5}px, ${my - 5}px) scale(${scale})`;
+      const ringScale = hovering ? 1.6 : 1;
+      cur.style.left = `${x}px`;
+      cur.style.top = `${y}px`;
+      ring.style.left = `${x}px`;
+      ring.style.top = `${y}px`;
+      cur.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      ring.style.transform = `translate(-50%, -50%) scale(${ringScale})`;
     };
 
     const handleMove = (e: MouseEvent) => {
-      mx = e.clientX;
-      my = e.clientY;
-      updateCursor();
+      updateCursor(e.clientX, e.clientY);
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+
+      const isHoverTarget = Boolean(
+        target.closest(
+          "a, button, .email-box, .project-card, .skill-cat, .social-link, .project-link",
+        ),
+      );
+
+      hovering = isHoverTarget;
+      cur.classList.toggle("hover", hovering);
+      ring.classList.toggle("hover", hovering);
     };
-
-    const animateRing = () => {
-      rx += (mx - rx - 18) * 0.12;
-      ry += (my - ry - 18) * 0.12;
-      ring.style.transform = `translate(${rx}px, ${ry}px)`;
-      ringRafId = window.requestAnimationFrame(animateRing);
-    };
-
-    const hoverTargets = Array.from(
-      document.querySelectorAll(
-        "a, button, .email-box, .project-card, .skill-cat",
-      ),
-    );
-
-    const handleEnter = () => {
-      hovering = true;
-      updateCursor();
-      ring.style.width = "56px";
-      ring.style.height = "56px";
-      ring.style.marginLeft = "-10px";
-      ring.style.marginTop = "-10px";
-    };
-
-    const handleLeave = () => {
-      hovering = false;
-      updateCursor();
-      ring.style.width = "36px";
-      ring.style.height = "36px";
-      ring.style.marginLeft = "0";
-      ring.style.marginTop = "0";
-    };
-
-    hoverTargets.forEach((el) => {
-      el.addEventListener("mouseenter", handleEnter);
-      el.addEventListener("mouseleave", handleLeave);
-    });
 
     document.addEventListener("mousemove", handleMove);
-    ringRafId = window.requestAnimationFrame(animateRing);
 
     return () => {
       document.removeEventListener("mousemove", handleMove);
-      hoverTargets.forEach((el) => {
-        el.removeEventListener("mouseenter", handleEnter);
-        el.removeEventListener("mouseleave", handleLeave);
-      });
-      window.cancelAnimationFrame(ringRafId);
     };
   }, []);
 
@@ -215,7 +184,7 @@ function App() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const CHARS = '  .`^",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
+    const CHARS = '  .^",:;!><~+_-?][}{1)(|/*#&%@$';
     const FS = 13;
     let W = 0;
     let H = 0;
@@ -286,6 +255,82 @@ function App() {
           Math.cos(x * Math.cos(time + 4.19) - y * Math.sin(time + 4.19)),
         () => Math.sin(x * y * 0.25 + time) + Math.cos((x * x - y * y) * 0.15 + 0.7 * time) + Math.sin(Math.sqrt(x * x + y * y) * 0.4 - 1.3 * time),
         () => Math.sin(Math.atan2(y, x) * Math.sin(3 * time) + Math.sqrt(x * x + y * y) * 0.5),
+        // 21-30: additional smoothed fields (use tanh to soften transitions)
+        () => Math.tanh(Math.sin(20 / (x * x + y * y + 0.5) - time) * 3),
+        () => Math.tanh((Math.sin(x + time * Math.sin(y)) + Math.cos(y + time * Math.cos(x))) * 1.6),
+        () => Math.tanh(Math.sin((10 * x) / (x * x + y * y + 0.1) - time) * 3),
+        () => {
+          const a = Math.sin(x * (3 + 2 * Math.sin(time))) * Math.sin(y * (4 + 2 * Math.cos(time)));
+          const b = Math.sin(y * (3 + 2 * Math.sin(time))) * Math.sin(x * (4 + 2 * Math.cos(time)));
+          return Math.tanh((a + b) * 2.2);
+        },
+        () => Math.tanh((Math.sin(x + Math.cos(y - time)) * Math.cos(y + Math.sin(x + time))) * 2.2),
+        () => Math.tanh((Math.sin(Math.cos(time) * x * x - Math.sin(time) * y * y) + Math.cos(Math.sin(time) * x * x + Math.cos(time) * y * y)) * 1.8),
+        () => Math.tanh((Math.sin(0.5 * Math.sqrt(x * x + y * y) + 5 * Math.atan2(y, x) + time * Math.sqrt(x * x + y * y))) * 0.7),
+        () => Math.tanh((Math.sin(Math.sqrt((x - 3 * Math.sin(time)) * (x - 3 * Math.sin(time)) + y * y)) + Math.cos(Math.sqrt((x + 3 * Math.sin(time)) * (x + 3 * Math.sin(time)) + y * y) - 2 * time)) * 1.4),
+        () => Math.tanh((Math.sin(x / (1 + 0.5 * Math.sin(time * y))) + Math.cos(y / (1 + 0.5 * Math.cos(time * x)))) * 1.6),
+        () => Math.tanh((Math.sin(x * Math.sin(time) + y) * Math.cos(y * Math.cos(time) + x) + Math.sin(0.5 * Math.sqrt(x * x + y * y) - time)) * 1.8),
+        // 31-50: more user-supplied fields
+        () => Math.tanh((Math.sin(x * x - y * y + 0.5 * time * x + Math.sin(time)) + Math.cos(2 * x * y + 0.5 * time * y - Math.cos(time))) * 1.4),
+        () => Math.tanh((Math.sin(x * x + y * y - time) * (0.5 + 0.5 * Math.cos(time)) + Math.cos(2 * x * y * 0.2) * (0.5 - 0.5 * Math.cos(time))) * 1.6),
+        () => {
+          let sum = 0;
+          for (let n = 0; n <= 4; n += 1) {
+            const angle = (2 * Math.PI * n) / 5 + time;
+            sum += Math.cos(x * Math.cos(angle) - y * Math.sin(angle));
+          }
+          return Math.tanh(sum * 0.3);
+        },
+        () => {
+          const ax = x - 2 * Math.sin(time);
+          const bx = x + 2 * Math.sin(time);
+          const left = Math.sin(Math.sqrt(ax * ax + y * y) - time + Math.atan2(y, ax) * Math.sin(time));
+          const right = Math.sin(Math.sqrt(bx * bx + y * y) - 2 * time + 2 * Math.atan2(y, bx) * Math.cos(time));
+          return Math.tanh(left * right * 1.8);
+        },
+        () => {
+          const k = Math.floor(time);
+          const left = Math.sin(time * x * Math.sin(y * k));
+          const right = Math.sin(time * y * Math.cos(x * k));
+          return Math.tanh(left * right * 2.2);
+        },
+        () => Math.tanh((Math.sin(x + 0.5 * time * x * Math.cos(0.5 * time * y)) + Math.cos(y + 0.5 * time * y * Math.sin(0.5 * time * x))) * 1.5),
+        () =>
+          Math.tanh(
+            (
+              Math.sin(time * Math.sqrt((x - 5) * (x - 5) + y * y)) +
+              Math.sin(1.1 * time * Math.sqrt((x - 5 * Math.cos(2.1)) * (x - 5 * Math.cos(2.1)) + (y - 5 * Math.sin(2.1)) * (y - 5 * Math.sin(2.1)))) +
+              Math.sin(1.2 * time * Math.sqrt((x - 5 * Math.cos(4.2)) * (x - 5 * Math.cos(4.2)) + (y - 5 * Math.sin(4.2)) * (y - 5 * Math.sin(4.2))))
+            ) * 0.9,
+          ),
+        () => Math.tanh((Math.sin(time * x * y * y + Math.sin(3 * time) * y * x * x) + Math.cos(time * y * x * x - Math.cos(3 * time) * x * y * y)) * 1.4),
+        () => Math.tanh((Math.sin(time * Math.sin(x)) - Math.cos(time * Math.cos(y))) * 2.4),
+        () => Math.tanh((Math.sin(x + 10 * Math.sin(y)) * (0.5 + 0.5 * Math.cos(time)) + Math.sin(6 * Math.atan2(y, x) + 0.1 * (x * x + y * y)) * (0.5 - 0.5 * Math.cos(time))) * 1.4),
+        () => {
+          const limit = Math.max(0, Math.floor(time));
+          let sum = 0;
+          for (let n = 0; n <= limit; n += 1) {
+            sum += Math.sin(Math.pow(2, n) * (x * Math.cos(n) + y * Math.sin(n))) * Math.pow(2, -n);
+          }
+          return Math.tanh(sum * 2.2);
+        },
+        () => Math.tanh((Math.sin(Math.sqrt(x * x + y * y) - time) / (1 + (Math.sin(0.5 * time * x) ** 2 + Math.cos(0.5 * time * y) ** 2) * Math.pow(2.718, -0.1 * (x * x + y * y)))) * 2.4),
+        () => Math.tanh((Math.sin(3 * Math.atan2(y, x + Math.sin(time)) + 0.5 * time * Math.sqrt(x * x + y * y)) * Math.cos(4 * Math.atan2(y + Math.cos(time), x) - 0.5 * time * Math.sqrt(x * x + y * y))) * 1.8),
+        () => {
+          const gateX = Math.sin(time * x) > 0 ? 1 : 0;
+          const gateY = Math.sin(time * y) > 0 ? 1 : 0;
+          return Math.tanh((Math.sin(time * x * Math.sin(y)) - gateX * gateY) * 2.2);
+        },
+        () => Math.tanh((Math.sin(time * Math.sin(time * x) * Math.sin(time * y)) * Math.sin(time * Math.sin(time * y) * Math.sin(time * x))) * 2.4),
+        () => Math.tanh((Math.sin(x * time * Math.sin(y * 0.1 * time)) * Math.cos(y * time * Math.cos(x * 0.1 * time))) * 1.6),
+        () => Math.tanh((Math.sin(time * (x + Math.sin(0.2 * time * y + time))) + Math.cos(time * (y + Math.sin(0.2 * time * x - time)))) * 1.4),
+        () => Math.tanh((Math.sin(time) - (Math.sin(x * time) ** 2 + Math.cos(y * time) ** 2)) * 2.5),
+        () => Math.tanh(Math.sin(time * (x * Math.sin(0.5 * time * y) + Math.sin(time * (y * Math.cos(0.5 * time * x))))) * 2.2),
+        () => {
+          const a = Math.sqrt((x - time) * (x - time) + y * y);
+          const b = Math.sqrt((x + time) * (x + time) + y * y);
+          return Math.tanh((Math.sin(10 / a + time) - Math.sin(10 / b - time)) * 1.6);
+        },
       ];
 
       const total = fields.length;
@@ -363,7 +408,7 @@ function App() {
   return (
     <>
       <div id="cursor" ref={cursorRef}></div>
-      <div id="cursor-ring" ref={ringRef}></div>
+      <div id="cursor-ring" ref={cursorRingRef}></div>
       <div id="toast" ref={toastRef}>
         ✓ Copied to clipboard
       </div>
