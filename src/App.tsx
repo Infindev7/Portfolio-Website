@@ -215,13 +215,14 @@ function App() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const CHARS = "  ·,.:;-~=+*!?%$#@";
+    const CHARS = '  .`^",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$';
     const FS = 13;
     let W = 0;
     let H = 0;
     let COLS = 0;
     let ROWS = 0;
     let t = 0;
+    const fieldSeconds = 10;
     let frameId = 0;
     let running = true;
 
@@ -233,16 +234,68 @@ function App() {
     };
 
     const plasmaVal = (col: number, row: number, time: number) => {
-      const cx = COLS / 2;
-      const cy = ROWS / 2;
-      const dx = col - cx;
-      const dy = row - cy;
-      return (
-        Math.sin(col * 0.28 + time) +
-        Math.sin(row * 0.2 + time * 0.85) +
-        Math.sin(col * 0.22 + row * 0.18 + time * 0.65) +
-        Math.sin(Math.sqrt(dx * dx + dy * dy) * 0.22 + time * 0.55)
-      );
+      const x = (col / Math.max(1, COLS - 1)) * 16;
+      const y = (row / Math.max(1, ROWS - 1)) * 16;
+      const fields = [
+        // 1: radial interaction with moving secondary center
+        () =>
+          Math.sin(Math.sqrt(x * x + y * y) + time * 0.9) *
+          Math.cos(Math.sqrt((x - 8 - Math.sin(time * 0.2)) ** 2 + (y - 4 - Math.cos(time * 0.15)) ** 2) - time * 0.4),
+        // 2: angle-based swirl with expanding radius
+        () => Math.sin(5 * Math.atan2(y, x) + 0.4 * Math.sqrt(x * x + y * y) + time * 0.7),
+        // 3: multiplicative XY waves with slow phase
+        () => Math.sin(x * y * 0.3 + time * 0.6) + Math.cos((x * x - y * y) * 0.2 - time * 0.45),
+        // 4: nested trig interactions that breathe
+        () => Math.sin(x * Math.sin(y + time * 0.3)) * Math.cos(y * Math.cos(x - time * 0.25)),
+        // 5: coupled sin/cos with faster micro-oscillation
+        () => Math.sin(x + Math.sin(2 * y + time * 0.6)) * Math.sin(y + Math.cos(2 * x - time * 0.5)),
+        // 6: radial energy with cross term modulation
+        () => Math.sin(x * x + y * y + time * 0.8) + Math.cos(2 * x * y - time * 0.9),
+        // 7: multiple centers with slowly moving offsets
+        () =>
+          Math.sin(Math.sqrt(x * x + y * y) + Math.sin(time * 0.4) * 0.6) +
+          Math.sin(Math.sqrt((x - 6 - Math.cos(time * 0.22)) ** 2 + (y - 3 - Math.sin(time * 0.18)) ** 2) - time * 0.35) +
+          Math.sin(Math.sqrt((x + 3 + Math.sin(time * 0.28)) ** 2 + (y - 6 + Math.cos(time * 0.12)) ** 2) + time * 0.25),
+        // 8: combined sin/cos with slow/fast components
+        () =>
+          Math.sin(5 * Math.sin(x / 2 + time * 0.2) + 4 * Math.cos(y / 2 - time * 0.15)) +
+          Math.cos(4 * Math.cos(x / 2 - time * 0.18) - 3 * Math.sin(y / 2 + time * 0.22)),
+        // 9: π scaled interferometry with time phase
+        () =>
+          Math.sin(Math.PI * x * Math.cos(Math.PI * y * 0.5 + time * 0.12)) +
+          Math.cos(Math.PI * y * Math.sin(Math.PI * x * 0.5 - time * 0.14)),
+        // 10: high-frequency coupling with drifting phases
+        () => Math.sin(3 * x + Math.cos(5 * y + time * 0.9)) * Math.cos(5 * x - Math.sin(3 * y - time * 0.7)),
+        // additional 11-20: user-supplied dynamic fields
+        () => Math.sin(0.08 * Math.pow(x * x + y * y, 0.8) - time),
+        () =>
+          Math.sin(
+            Math.sqrt((x - 5 * Math.cos(time)) * (x - 5 * Math.cos(time)) + (y - 5 * Math.sin(time)) * (y - 5 * Math.sin(time)))
+          ) +
+          Math.sin(
+            Math.sqrt((x + 5 * Math.cos(time)) * (x + 5 * Math.cos(time)) + (y + 5 * Math.sin(time)) * (y + 5 * Math.sin(time)))
+          ),
+        () => Math.sin(3 * (x * Math.cos(time) - y * Math.sin(time))) * Math.cos(2 * (x * Math.sin(time) + y * Math.cos(time))),
+        () => Math.sin(0.15 * (x * x * (1 + Math.cos(time)) + y * y * (1 - Math.cos(time)))),
+        () => Math.sin(time * x * Math.sin(y)) + Math.cos(time * y * Math.cos(x)),
+        () => Math.sin(6 * Math.atan2(y, x) + time * Math.pow(x * x + y * y, 0.4)),
+        () => Math.sin(x + time) * Math.cos(x - time) + Math.sin(y + 0.618 * time) * Math.cos(y - 0.618 * time),
+        () =>
+          Math.cos(x * Math.cos(time) - y * Math.sin(time)) +
+          Math.cos(x * Math.cos(time + 2.09) - y * Math.sin(time + 2.09)) +
+          Math.cos(x * Math.cos(time + 4.19) - y * Math.sin(time + 4.19)),
+        () => Math.sin(x * y * 0.25 + time) + Math.cos((x * x - y * y) * 0.15 + 0.7 * time) + Math.sin(Math.sqrt(x * x + y * y) * 0.4 - 1.3 * time),
+        () => Math.sin(Math.atan2(y, x) * Math.sin(3 * time) + Math.sqrt(x * x + y * y) * 0.5),
+      ];
+
+      const total = fields.length;
+      const phase = (time / fieldSeconds) % total;
+      const currentIndex = Math.floor(phase);
+      const nextIndex = (currentIndex + 1) % total;
+      const blend = phase - currentIndex;
+      const easedBlend = blend * blend * (3 - 2 * blend);
+
+      return fields[currentIndex]() * (1 - easedBlend) + fields[nextIndex]() * easedBlend;
     };
 
     const draw = () => {
@@ -271,7 +324,7 @@ function App() {
         }
       }
 
-      t += 0.022;
+      t += 0.016;
       frameId = window.requestAnimationFrame(draw);
     };
 
